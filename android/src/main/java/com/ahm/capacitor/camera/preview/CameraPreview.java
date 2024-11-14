@@ -26,6 +26,10 @@ import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 import java.io.File;
 import java.util.List;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Base64; 
 import org.json.JSONArray;
 
 @CapacitorPlugin(name = "CameraPreview", permissions = { @Permission(strings = { CAMERA }, alias = CameraPreview.CAMERA_PERMISSION_ALIAS) })
@@ -433,8 +437,31 @@ public class CameraPreview extends Plugin implements CameraActivity.CameraPrevie
     @Override
     public void onStopRecordVideo(String file) {
         PluginCall pluginCall = bridge.getSavedCall(recordCallbackId);
+
         JSObject jsObject = new JSObject();
         jsObject.put("videoFilePath", file);
+
+        File videoFile = new File(file);
+
+        if (!videoFile.exists() || !videoFile.canRead()) {
+            pluginCall.reject("Cannot access the video file.");
+            return;
+        }
+
+        try {
+            // Lee el archivo de video como bytes
+            byte[] videoBytes = Files.readAllBytes(videoFile.toPath());
+
+            // Convierte los bytes del video a base64
+            String videoBase64 = Base64.getEncoder().encodeToString(videoBytes);
+
+            // Añade el video en formato base64 al JSObject
+            jsObject.put("videoBase64", videoBase64);
+        } catch (IOException e) {
+            pluginCall.reject("Error reading video file: " + e.getLocalizedMessage());
+            return;
+        }
+
         pluginCall.resolve(jsObject);
     }
 
