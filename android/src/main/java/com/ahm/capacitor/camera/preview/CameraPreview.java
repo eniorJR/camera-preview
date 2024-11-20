@@ -12,6 +12,9 @@ import android.hardware.Camera;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.view.Display;
+import android.content.Intent;
+import android.net.Uri;
+import android.provider.Settings;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -266,12 +269,43 @@ public class CameraPreview extends Plugin implements CameraActivity.CameraPrevie
     @PermissionCallback
     private void handleCameraPermissionResult(PluginCall call) {
         if (PermissionState.GRANTED.equals(getPermissionState(CAMERA_PERMISSION_ALIAS))) {
+            if (PermissionState.GRANTED.equals(getPermissionState(AUDIO_PERMISSION_ALIAS))) {
+                startCamera(call);
+            } else {
+                requestPermissionForAlias(AUDIO_PERMISSION_ALIAS, call, "handleAudioPermissionResult");
+            }
+        } else {
+            redirectToAppSettings("Camera permission denied. Please enable it in settings.", call);
+        }
+    }
+
+    @PermissionCallback
+    private void handleAudioPermissionResult(PluginCall call) {
+        if (PermissionState.GRANTED.equals(getPermissionState(AUDIO_PERMISSION_ALIAS))) {
             startCamera(call);
         } else {
-            Logger.debug(getLogTag(),
-                    "User denied camera permission: " + getPermissionState(CAMERA_PERMISSION_ALIAS).toString());
-            call.reject("Permission failed: user denied access to camera.");
+            redirectToAppSettings("Audio permission denied. Please enable it in settings.", call);
         }
+    }
+
+    private void redirectToAppSettings(String message, PluginCall call) {
+        // Mostrar mensaje al usuario
+        notifyUser(message);
+
+        // Crear intent para abrir los ajustes de la app
+        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        Uri uri = Uri.fromParts("package", getContext().getPackageName(), null);
+        intent.setData(uri);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        getContext().startActivity(intent);
+
+        // Rechazar el PluginCall para indicar que no se pudo completar
+        call.reject(message);
+    }
+
+    private void notifyUser(String message) {
+        // Opcional: Mostrar un mensaje al usuario, como un Toast
+        android.widget.Toast.makeText(getContext(), message, android.widget.Toast.LENGTH_LONG).show();
     }
 
     private void startCamera(final PluginCall call) {
