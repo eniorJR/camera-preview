@@ -75,6 +75,11 @@ public class CameraPreview: CAPPlugin {
                 call.reject("permission failed")
                 return
             }
+            AVCaptureDevice.requestAccess(for: .audio, completionHandler: { (grantedAudio: Bool) in
+        guard grantedAudio else {
+            call.reject("Microphone permission failed")
+            return
+        }
 
             DispatchQueue.main.async {
                 if self.cameraController.captureSession?.isRunning ?? false {
@@ -108,7 +113,8 @@ public class CameraPreview: CAPPlugin {
 
                     }
                 }
-            }
+            }   
+             })
         })
 
     }
