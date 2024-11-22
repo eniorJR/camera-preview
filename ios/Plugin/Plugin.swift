@@ -71,15 +71,73 @@ public class CameraPreview: CAPPlugin {
         self.mirrorVideo = call.getBool("mirrorVideo") ?? false
 
         AVCaptureDevice.requestAccess(for: .video, completionHandler: { (granted: Bool) in
-            guard granted else {
-                call.reject("permission failed")
-                return
+  guard granted else {
+        DispatchQueue.main.async {
+            // Crear la alerta
+            let alertController = UIAlertController(
+                title: "Permissions Required",
+                message: "Please enable camera permissions in settings.",
+                preferredStyle: .alert
+            )
+
+            // Acción para ir a los settings
+            let settingsAction = UIAlertAction(title: "Open settings", style: .default) { _ in
+                if let settingsUrl = URL(string: UIApplication.openSettingsURLString),
+                   UIApplication.shared.canOpenURL(settingsUrl) {
+                    UIApplication.shared.open(settingsUrl, options: [:], completionHandler: nil)
+                }
             }
-            AVCaptureDevice.requestAccess(for: .audio, completionHandler: { (grantedAudio: Bool) in
-        guard grantedAudio else {
-            call.reject("Microphone permission failed")
-            return
+
+            // Acción de cancelar
+            let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
+
+            // Añadir acciones a la alerta
+            alertController.addAction(settingsAction)
+            alertController.addAction(cancelAction)
+
+            // Mostrar la alerta
+            if let viewController = self.bridge?.viewController {
+                viewController.present(alertController, animated: true)
+            }
+
+            call.reject("permission failed")
         }
+        return
+            }
+             AVCaptureDevice.requestAccess(for: .audio, completionHandler: { (granted: Bool) in
+  guard granted else {
+        DispatchQueue.main.async {
+            // Crear la alerta
+            let alertController = UIAlertController(
+                title: "Permissions Required",
+                message: "Please enable audio permissions in settings.",
+                preferredStyle: .alert
+            )
+
+            // Acción para ir a los ajustes
+            let settingsAction = UIAlertAction(title: "Open settings", style: .default) { _ in
+                if let settingsUrl = URL(string: UIApplication.openSettingsURLString),
+                   UIApplication.shared.canOpenURL(settingsUrl) {
+                    UIApplication.shared.open(settingsUrl, options: [:], completionHandler: nil)
+                }
+            }
+
+            // Acción de cancelar
+            let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
+
+            // Añadir acciones a la alerta
+            alertController.addAction(settingsAction)
+            alertController.addAction(cancelAction)
+
+            // Mostrar la alerta
+            if let viewController = self.bridge?.viewController {
+                viewController.present(alertController, animated: true)
+            }
+
+            call.reject("permission failed")
+        }
+        return
+            }
 
             DispatchQueue.main.async {
                 if self.cameraController.captureSession?.isRunning ?? false {
@@ -113,10 +171,9 @@ public class CameraPreview: CAPPlugin {
 
                     }
                 }
-            }   
-             })
+            }
         })
-
+ })
     }
 
     @objc func flip(_ call: CAPPluginCall) {
